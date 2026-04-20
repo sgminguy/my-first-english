@@ -65,59 +65,64 @@ if audio_value:
         f.write(audio_value.getvalue())
         
     with st.spinner("듣고 있어요... 🎧"):
-        # 1. STT
-        transcript = transcribe_audio(audio_file_path)
-        
-        if transcript:
-            user_text = transcript
-            st.write(f"👦 나: {user_text}")
+        try:
+            # 1. STT
+            transcript = transcribe_audio(audio_file_path)
             
-            # 2. Pronunciation Score
-            if target_sentence:
-                score = calculate_pronunciation_score(target_sentence, user_text)
-                st.session_state.score += score
+            if transcript:
+                user_text = transcript
+                st.write(f"👦 나: {user_text}")
                 
-                if score >= 70:
-                    st.success(f"🌟 참 잘했어요! 발음 점수: {score}점")
-                    st.session_state.current_target_idx += 1
+                # 2. Pronunciation Score
+                if target_sentence:
+                    score = calculate_pronunciation_score(target_sentence, user_text)
+                    st.session_state.score += score
+                    
+                    if score >= 70:
+                        st.success(f"🌟 참 잘했어요! 발음 점수: {score}점")
+                        st.session_state.current_target_idx += 1
+                    else:
+                        st.warning(f"👍 괜찮아요, 다시 한번 해볼까요? 발음 점수: {score}점")
+                
+                # 3. LLM (AI Teacher)
+                system_prompt = selected_scenario["system_prompt"]
+                
+                # AI에게 사용자가 원래 해야 했던 정답 문장을 알려주어 더 정확한 피드백을 유도합니다.
+                if target_sentence:
+                    feedback_instruction = f"\n\nThe user was trying to say: '{target_sentence}'. The user actually said: '{user_text}'. If the user's sentence is wrong or grammar is incorrect, kindly explain in Korean how to fix it. Then, answer the user's message in English (1-2 simple sentences) to continue the roleplay."
+                    current_system_prompt = system_prompt + feedback_instruction
                 else:
-                    st.warning(f"👍 괜찮아요, 다시 한번 해볼까요? 발음 점수: {score}점")
-            
-            # 3. LLM (AI Teacher)
-            system_prompt = selected_scenario["system_prompt"]
-            
-            # AI에게 사용자가 원래 해야 했던 정답 문장을 알려주어 더 정확한 피드백을 유도합니다.
-            if target_sentence:
-                feedback_instruction = f"\n\nThe user was trying to say: '{target_sentence}'. The user actually said: '{user_text}'. If the user's sentence is wrong or grammar is incorrect, kindly explain in Korean how to fix it. Then, answer the user's message in English (1-2 simple sentences) to continue the roleplay."
-                current_system_prompt = system_prompt + feedback_instruction
-            else:
-                current_system_prompt = system_prompt
+                    current_system_prompt = system_prompt
+                    
+                formatted_history = [{"role": msg["role"], "content": msg["content"]} for msg in st.session_state.chat_history]
                 
-            formatted_history = [{"role": msg["role"], "content": msg["content"]} for msg in st.session_state.chat_history]
-            
-            ai_response = generate_teacher_response(current_system_prompt, user_text, formatted_history)
-            st.info(f"🤖 AI 선생님의 답변 및 교정:\n\n{ai_response}")
-            
-            # 4. TTS
-            tts_file = text_to_speech(ai_response)
-            if tts_file:
-                st.success("🔊 아래의 재생 버튼(▶)을 눌러 AI 선생님의 진짜 목소리를 들어보세요! (스마트폰에서는 자동 재생이 차단될 수 있습니다)")
+                ai_response = generate_teacher_response(current_system_prompt, user_text, formatted_history)
+                st.info(f"🤖 AI 선생님의 답변 및 교정:\n\n{ai_response}")
                 
-                # HTML audio for desktop autoplay
-                audio_html = f"""
-                    <audio autoplay="true">
-                    <source src="{tts_file}" type="audio/mp3">
-                    </audio>
-                    """
-                st.markdown(audio_html, unsafe_allow_html=True)
+                # 4. TTS
+                tts_file = text_to_speech(ai_response)
+                if tts_file:
+                    st.success("🔊 아래의 재생 버튼(▶)을 눌러 AI 선생님의 진짜 목소리를 들어보세요! (스마트폰에서는 자동 재생이 차단될 수 있습니다)")
+                    
+                    # HTML audio for desktop autoplay
+                    audio_html = f"""
+                        <audio autoplay="true">
+                        <source src="{tts_file}" type="audio/mp3">
+                        </audio>
+                        """
+                    st.markdown(audio_html, unsafe_allow_html=True)
+                    
+                    # Visible audio widget for mobile users
+                    st.audio(tts_file, format="audio/mp3")
                 
-                # Visible audio widget for mobile users
-                st.audio(tts_file, format="audio/mp3")
+                # Save history
+                st.session_state.chat_history.append({"role": "user", "content": user_text})
+                st.session_state.chat_history.append({"role": "assistant", "content": ai_response})
+                
+        except Exception as e:
+            st.error(f"🚨 오류가 발생했습니다!\n\n**원인:** {str(e)}\n\n💡 Streamlit Cloud 배포 화면의 'Settings -> Secrets' 메뉴에 OPENAI_API_KEY가 정확히 입력되었는지 확인해주세요.")
             
-            # Save history
-            st.session_state.chat_history.append({"role": "user", "content": user_text})
-            st.session_state.chat_history.append({"role": "assistant", "content": ai_response})
-            
+        finally:
             # Cleanup temp file
             try:
                 os.remove(audio_file_path)

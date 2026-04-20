@@ -20,7 +20,7 @@ def transcribe_audio(audio_file_path):
         return transcript
     except Exception as e:
         print(f"Error in transcription: {e}")
-        return None
+        raise Exception(f"음성 인식 오류: {str(e)}")
 
 def generate_teacher_response(system_prompt, user_message, chat_history=None):
     """Generate response from GPT-4o."""
@@ -41,7 +41,7 @@ def generate_teacher_response(system_prompt, user_message, chat_history=None):
         return response.choices[0].message.content
     except Exception as e:
         print(f"Error in LLM: {e}")
-        return "I'm sorry, I have a little problem right now."
+        raise Exception(f"AI 응답 생성 오류: {str(e)}")
 
 def text_to_speech(text, output_file_path="response.mp3"):
     """Convert text to speech using OpenAI TTS."""
@@ -55,4 +55,4 @@ def text_to_speech(text, output_file_path="response.mp3"):
         return output_file_path
     except Exception as e:
         print(f"Error in TTS: {e}")
-        return None
+        raise Exception(f"음성 합성 오류: {str(e)}")
