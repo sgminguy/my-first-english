@@ -14,9 +14,9 @@ def load_scenarios():
 scenarios = load_scenarios()
 
 # UI Setup
-st.set_page_config(page_title="초등학생 영어 친구", page_icon="🏫", layout="centered")
+st.set_page_config(page_title="AI 영어 회화 튜터", page_icon="💬", layout="centered")
 
-st.title("🌟 AI 영어 친구와 대화해요!")
+st.title("🗣️ AI 영어 회화 튜터와 대화해요!")
 
 # Session state initialization
 if "chat_history" not in st.session_state:
@@ -71,7 +71,7 @@ if audio_value:
             
             if transcript:
                 user_text = transcript
-                st.write(f"👦 나: {user_text}")
+                st.write(f"👤 나: {user_text}")
                 
                 # 2. Pronunciation Score
                 if target_sentence:
@@ -97,12 +97,12 @@ if audio_value:
                 formatted_history = [{"role": msg["role"], "content": msg["content"]} for msg in st.session_state.chat_history]
                 
                 ai_response = generate_teacher_response(current_system_prompt, user_text, formatted_history)
-                st.info(f"🤖 AI 선생님의 답변 및 교정:\n\n{ai_response}")
+                st.info(f"💡 AI 튜터의 답변 및 교정:\n\n{ai_response}")
                 
                 # 4. TTS
                 tts_file = text_to_speech(ai_response)
                 if tts_file:
-                    st.success("🔊 아래의 재생 버튼(▶)을 눌러 AI 선생님의 진짜 목소리를 들어보세요! (스마트폰에서는 자동 재생이 차단될 수 있습니다)")
+                    st.success("🔊 아래의 재생 버튼(▶)을 눌러 AI 튜터의 음성을 들어보세요! (스마트폰에서는 자동 재생이 차단될 수 있습니다)")
                     
                     # HTML audio for desktop autoplay
                     audio_html = f"""
@@ -140,4 +140,4 @@ with st.expander("지난 대화 보기"):
         if msg["role"] == "user":
             st.markdown(f"**나:** {msg['content']}")
         else:
-            st.markdown(f"**AI 친구:** {msg['content']}")
+            st.markdown(f"**AI 튜터:** {msg['content']}")

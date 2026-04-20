@@ -49,7 +49,7 @@ def text_to_speech(text, output_file_path="response.mp3"):
     try:
         response = client.audio.speech.create(
             model="tts-1",
-            voice="nova", # Nova is a gentle voice suitable for kids
+            voice="alloy", # Alloy is a clear and neutral voice
             input=text
         )
         response.stream_to_file(output_file_path)
